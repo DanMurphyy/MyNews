@@ -22,7 +22,7 @@ class NewsViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         repository = NewsRepository(articleDao)
-        getAllArticles = repository.getAllArticles
+        getAllArticles = repository.getSavedArticles
         getBreakingNews("us")
     }
 
@@ -36,7 +36,7 @@ class NewsViewModel(application: Application) : AndroidViewModel(application) {
 
 
     fun getBreakingNews(countryCode: String) = viewModelScope.launch(Dispatchers.IO) {
-        _breakingNews.postValue(Resource.Loading()) // Use the private _breakingNews to set values
+        _breakingNews.postValue(Resource.Loading())
         val response = repository.getBreakingNews(countryCode, breakingNewsPage)
         _breakingNews.postValue(handleBreakingNewsResponse(response))
     }
@@ -46,7 +46,6 @@ class NewsViewModel(application: Application) : AndroidViewModel(application) {
         val response = repository.searchNews(searchQuery, searchNewsPage)
         _searchNews.postValue(handleSearchNewsResponse(response))
     }
-
 
     private fun handleBreakingNewsResponse(response: Response<NewsResponse>): Resource<NewsResponse> {
         if (response.isSuccessful) {
@@ -64,6 +63,14 @@ class NewsViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         return Resource.Error(response.message())
+    }
+
+    fun saveArticle(article: Article) = viewModelScope.launch {
+        repository.upsert(article)
+    }
+
+    fun deleteArticle(article: Article) = viewModelScope.launch {
+        repository.deleteArticle(article)
     }
 
 }
