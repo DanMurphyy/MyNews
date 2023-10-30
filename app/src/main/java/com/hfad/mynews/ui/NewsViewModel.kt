@@ -26,11 +26,14 @@ class NewsViewModel(application: Application) : AndroidViewModel(application) {
         getBreakingNews("us")
     }
 
-    private val _breakingNews =
-        MutableLiveData<Resource<NewsResponse>>() // Use a private LiveData for modification
-    val breakingNews: LiveData<Resource<NewsResponse>> =
-        _breakingNews // Expose it as LiveData to prevent external modifications
-    var breakingNewsPage = 1
+    private val _breakingNews = MutableLiveData<Resource<NewsResponse>>()
+    val breakingNews: LiveData<Resource<NewsResponse>> = _breakingNews
+    private var breakingNewsPage = 1
+
+    private val _searchNews = MutableLiveData<Resource<NewsResponse>>()
+    val searchNews: LiveData<Resource<NewsResponse>> = _searchNews
+    private var searchNewsPage = 1
+
 
     fun getBreakingNews(countryCode: String) = viewModelScope.launch(Dispatchers.IO) {
         _breakingNews.postValue(Resource.Loading()) // Use the private _breakingNews to set values
@@ -38,7 +41,23 @@ class NewsViewModel(application: Application) : AndroidViewModel(application) {
         _breakingNews.postValue(handleBreakingNewsResponse(response))
     }
 
+    fun searchNews(searchQuery: String) = viewModelScope.launch(Dispatchers.IO) {
+        _searchNews.postValue(Resource.Loading())
+        val response = repository.searchNews(searchQuery, searchNewsPage)
+        _searchNews.postValue(handleSearchNewsResponse(response))
+    }
+
+
     private fun handleBreakingNewsResponse(response: Response<NewsResponse>): Resource<NewsResponse> {
+        if (response.isSuccessful) {
+            response.body()?.let { resultResponse ->
+                return Resource.Success(resultResponse)
+            }
+        }
+        return Resource.Error(response.message())
+    }
+
+    private fun handleSearchNewsResponse(response: Response<NewsResponse>): Resource<NewsResponse> {
         if (response.isSuccessful) {
             response.body()?.let { resultResponse ->
                 return Resource.Success(resultResponse)
